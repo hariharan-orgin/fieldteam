@@ -6,33 +6,29 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { User, Bell, Smartphone, Mail, Shield } from "lucide-react";
-import { useState } from "react";
+import { User, Bell, Smartphone, Mail, Shield, Check } from "lucide-react";
+import { useSettings } from "@/hooks/useSettings";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Settings() {
   const { toast } = useToast();
-  const [profile, setProfile] = useState({
-    name: "John Doe",
-    phone: "+1 (555) 123-4567",
-    email: "john.doe@safetext.com",
-  });
-
-  const [notifications, setNotifications] = useState({
-    push: true,
-    sms: true,
-    email: false,
-    criticalOnly: false,
-  });
-
-  const [availability, setAvailability] = useState(true);
+  const { settings, updateProfile, updateNotifications, updateAvailability, saveSettings } =
+    useSettings();
 
   const handleSave = () => {
-    toast({
-      title: "Settings Saved",
-      description: "Your preferences have been updated successfully.",
-    });
+    const saved = saveSettings();
+    if (saved) {
+      toast({
+        title: "Settings Saved",
+        description: "Your preferences have been saved permanently.",
+      });
+    }
   };
+
+  const initials = settings.profile.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("");
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -50,11 +46,11 @@ export default function Settings() {
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
                   <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-                    JD
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium">{profile.name}</p>
+                  <p className="font-medium">{settings.profile.name}</p>
                   <p className="text-sm text-muted-foreground">Field Team Member</p>
                 </div>
               </div>
@@ -64,16 +60,16 @@ export default function Settings() {
                   <Label htmlFor="name">Full Name</Label>
                   <Input
                     id="name"
-                    value={profile.name}
-                    onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                    value={settings.profile.name}
+                    onChange={(e) => updateProfile({ name: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
                   <Input
                     id="phone"
-                    value={profile.phone}
-                    onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                    value={settings.profile.phone}
+                    onChange={(e) => updateProfile({ phone: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
@@ -81,8 +77,8 @@ export default function Settings() {
                   <Input
                     id="email"
                     type="email"
-                    value={profile.email}
-                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                    value={settings.profile.email}
+                    onChange={(e) => updateProfile({ email: e.target.value })}
                   />
                 </div>
               </div>
@@ -107,10 +103,8 @@ export default function Settings() {
                   </div>
                 </div>
                 <Switch
-                  checked={notifications.push}
-                  onCheckedChange={(checked) =>
-                    setNotifications({ ...notifications, push: checked })
-                  }
+                  checked={settings.notifications.push}
+                  onCheckedChange={(checked) => updateNotifications({ push: checked })}
                 />
               </div>
 
@@ -127,10 +121,8 @@ export default function Settings() {
                   </div>
                 </div>
                 <Switch
-                  checked={notifications.sms}
-                  onCheckedChange={(checked) =>
-                    setNotifications({ ...notifications, sms: checked })
-                  }
+                  checked={settings.notifications.sms}
+                  onCheckedChange={(checked) => updateNotifications({ sms: checked })}
                 />
               </div>
 
@@ -147,10 +139,8 @@ export default function Settings() {
                   </div>
                 </div>
                 <Switch
-                  checked={notifications.email}
-                  onCheckedChange={(checked) =>
-                    setNotifications({ ...notifications, email: checked })
-                  }
+                  checked={settings.notifications.email}
+                  onCheckedChange={(checked) => updateNotifications({ email: checked })}
                 />
               </div>
 
@@ -167,10 +157,8 @@ export default function Settings() {
                   </div>
                 </div>
                 <Switch
-                  checked={notifications.criticalOnly}
-                  onCheckedChange={(checked) =>
-                    setNotifications({ ...notifications, criticalOnly: checked })
-                  }
+                  checked={settings.notifications.criticalOnly}
+                  onCheckedChange={(checked) => updateNotifications({ criticalOnly: checked })}
                 />
               </div>
             </div>
@@ -193,12 +181,12 @@ export default function Settings() {
                 <div className="flex items-center gap-3">
                   <div
                     className={`w-3 h-3 rounded-full ${
-                      availability ? "bg-low" : "bg-muted-foreground"
+                      settings.availability ? "bg-low" : "bg-muted-foreground"
                     }`}
                   />
                   <Switch
-                    checked={availability}
-                    onCheckedChange={setAvailability}
+                    checked={settings.availability}
+                    onCheckedChange={updateAvailability}
                   />
                 </div>
               </div>
@@ -208,6 +196,7 @@ export default function Settings() {
           {/* Save Button */}
           <div className="flex justify-end">
             <Button className="rounded-button" onClick={handleSave}>
+              <Check className="w-4 h-4 mr-2" />
               Save Changes
             </Button>
           </div>

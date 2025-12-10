@@ -6,10 +6,11 @@ import { cn } from "@/lib/utils";
 interface MiniMapProps {
   cases: Case[];
   onCaseClick?: (caseData: Case) => void;
+  onViewFullMap?: () => void;
   className?: string;
 }
 
-export function MiniMap({ cases, onCaseClick, className }: MiniMapProps) {
+export function MiniMap({ cases, onCaseClick, onViewFullMap, className }: MiniMapProps) {
   const severityColors = {
     critical: "bg-critical",
     high: "bg-high",
@@ -21,7 +22,7 @@ export function MiniMap({ cases, onCaseClick, className }: MiniMapProps) {
     <div className={cn("bg-card rounded-lg border shadow-card overflow-hidden", className)}>
       <div className="flex items-center justify-between p-3 border-b border-border">
         <h3 className="text-sm font-medium">Active Incidents Map</h3>
-        <Button variant="ghost" size="sm" className="h-7 text-xs">
+        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onViewFullMap}>
           View Full Map
         </Button>
       </div>
