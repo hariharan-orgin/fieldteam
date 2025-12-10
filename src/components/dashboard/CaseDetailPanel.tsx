@@ -21,7 +21,9 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 interface CaseDetailPanelProps {
   caseData: Case | null;
@@ -34,7 +36,24 @@ export function CaseDetailPanel({
   onClose,
   onStatusUpdate,
 }: CaseDetailPanelProps) {
-  const [notes, setNotes] = useState(caseData?.notes || "");
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  // Load notes from localStorage
+  const [notes, setNotes] = useState(() => {
+    if (!caseData) return "";
+    const saved = localStorage.getItem(`case-notes-${caseData.id}`);
+    return saved || caseData?.notes || "";
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Update notes when case changes
+  useEffect(() => {
+    if (caseData) {
+      const saved = localStorage.getItem(`case-notes-${caseData.id}`);
+      setNotes(saved || caseData?.notes || "");
+    }
+  }, [caseData?.id]);
 
   if (!caseData) return null;
 
@@ -56,6 +75,83 @@ export function CaseDetailPanel({
     }
   };
 
+  const handleSaveNotes = () => {
+    setIsSaving(true);
+    setTimeout(() => {
+      localStorage.setItem(`case-notes-${caseData.id}`, notes);
+      setIsSaving(false);
+      toast({
+        title: "Notes Saved",
+        description: `Field notes for ${caseData.id} have been saved.`,
+      });
+    }, 300);
+  };
+
+  const handleOpenInMap = () => {
+    navigate("/fullscreen-map");
+  };
+
+  const handleDownloadAttachment = (attachment: { url: string; name: string }) => {
+    // Create a temporary link to download
+    const link = document.createElement("a");
+    link.href = attachment.url;
+    link.download = attachment.name;
+    link.target = "_blank";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({
+      title: "Download Started",
+      description: `Downloading ${attachment.name}`,
+    });
+  };
+
+  const handleDownloadAll = () => {
+    caseData.attachments.forEach((attachment) => {
+      handleDownloadAttachment(attachment);
+    });
+  };
+
+  const handleExportAudit = () => {
+    const csvContent = [
+      "Action,Actor,Timestamp,Details",
+      ...caseData.auditTrail.map(
+        (event) =>
+          `"${event.action}","${event.actor.name}","${event.timestamp}","${event.details || ""}"`
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${caseData.id}-audit-trail.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export Complete",
+      description: `Audit trail exported for ${caseData.id}`,
+    });
+  };
+
+  const handleAcknowledge = () => {
+    toast({
+      title: "Case Acknowledged",
+      description: `Case ${caseData.id} has been acknowledged. Webhook triggered.`,
+    });
+  };
+
+  const handleMarkArrived = () => {
+    onStatusUpdate?.(caseData.id, "arrived");
+    toast({
+      title: "Status Updated",
+      description: `You have arrived at ${caseData.location}`,
+    });
+  };
+
   return (
     <div className="w-[360px] bg-card border-l border-border flex flex-col h-full animate-slide-in-right">
       {/* Header */}
@@ -73,11 +169,16 @@ export function CaseDetailPanel({
         <div className="p-4 space-y-6">
           {/* Quick Actions */}
           <div className="flex gap-2">
-            <Button size="sm" className="flex-1 rounded-button">
+            <Button size="sm" className="flex-1 rounded-button" onClick={handleAcknowledge}>
               <Check className="w-4 h-4 mr-1" />
               Acknowledge
             </Button>
-            <Button size="sm" variant="outline" className="flex-1 rounded-button">
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1 rounded-button"
+              onClick={handleMarkArrived}
+            >
               <Navigation className="w-4 h-4 mr-1" />
               Mark Arrived
             </Button>
@@ -112,7 +213,12 @@ export function CaseDetailPanel({
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Location
               </p>
-              <Button variant="ghost" size="sm" className="h-6 text-xs">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs"
+                onClick={handleOpenInMap}
+              >
                 <ExternalLink className="w-3 h-3 mr-1" />
                 Open in Map
               </Button>
@@ -121,7 +227,7 @@ export function CaseDetailPanel({
               <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
               <span>{caseData.location}</span>
             </div>
-            <div className="h-32 bg-muted rounded-md flex items-center justify-center">
+            <div className="h-32 bg-muted rounded-md flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors" onClick={handleOpenInMap}>
               <MapPin className="w-8 h-8 text-muted-foreground/50" />
             </div>
           </div>
@@ -158,9 +264,14 @@ export function CaseDetailPanel({
             <div>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Attachments
+                  Attachments ({caseData.attachments.length})
                 </p>
-                <Button variant="ghost" size="sm" className="h-6 text-xs">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs"
+                  onClick={handleDownloadAll}
+                >
                   <Download className="w-3 h-3 mr-1" />
                   Download All
                 </Button>
@@ -171,7 +282,8 @@ export function CaseDetailPanel({
                   return (
                     <div
                       key={attachment.id}
-                      className="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-secondary cursor-pointer hover:opacity-80 transition-opacity"
+                      className="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-secondary cursor-pointer hover:opacity-80 transition-opacity relative group"
+                      onClick={() => handleDownloadAttachment(attachment)}
                     >
                       {attachment.thumbnail ? (
                         <img
@@ -184,6 +296,9 @@ export function CaseDetailPanel({
                           <Icon className="w-6 h-6 text-muted-foreground" />
                         </div>
                       )}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Download className="w-5 h-5 text-white" />
+                      </div>
                     </div>
                   );
                 })}
@@ -231,7 +346,12 @@ export function CaseDetailPanel({
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Audit Trail
               </p>
-              <Button variant="ghost" size="sm" className="h-6 text-xs">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs"
+                onClick={handleExportAudit}
+              >
                 <Download className="w-3 h-3 mr-1" />
                 Export
               </Button>
@@ -268,8 +388,13 @@ export function CaseDetailPanel({
               placeholder="Add site observations..."
               className="min-h-20 text-sm resize-none"
             />
-            <Button size="sm" className="mt-2 rounded-button">
-              Save Notes
+            <Button
+              size="sm"
+              className="mt-2 rounded-button"
+              onClick={handleSaveNotes}
+              disabled={isSaving}
+            >
+              {isSaving ? "Saving..." : "Save Notes"}
             </Button>
           </div>
         </div>

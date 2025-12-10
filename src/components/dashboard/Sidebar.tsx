@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -36,12 +36,29 @@ export function Sidebar({
   onCollapse,
   assignedCasesCount = 5,
 }: SidebarProps) {
-  const [isAvailable, setIsAvailable] = useState(true);
+  const [isAvailable, setIsAvailable] = useState(() => {
+    const saved = localStorage.getItem("userSettings");
+    if (saved) {
+      const settings = JSON.parse(saved);
+      return settings.availability ?? true;
+    }
+    return true;
+  });
+
+  // Sync availability with localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("userSettings");
+    if (saved) {
+      const settings = JSON.parse(saved);
+      settings.availability = isAvailable;
+      localStorage.setItem("userSettings", JSON.stringify(settings));
+    }
+  }, [isAvailable]);
 
   return (
     <aside
       className={cn(
-        "flex flex-col bg-sidebar border-r border-sidebar-border h-screen transition-all duration-300",
+        "flex flex-col bg-sidebar border-r border-sidebar-border h-screen transition-all duration-300 fixed left-0 top-0 z-40",
         collapsed ? "w-16" : "w-[260px]"
       )}
     >

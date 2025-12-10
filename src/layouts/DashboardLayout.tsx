@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { mockCases } from "@/data/mock-cases";
+import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -20,7 +21,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         onCollapse={setSidebarCollapsed}
         assignedCasesCount={assignedCasesCount}
       />
-      <main className="flex-1 flex flex-col overflow-hidden">
+      {/* Main content with margin to account for fixed sidebar */}
+      <main
+        className={cn(
+          "flex-1 flex flex-col overflow-hidden transition-all duration-300",
+          sidebarCollapsed ? "ml-16" : "ml-[260px]"
+        )}
+      >
         {children}
       </main>
     </div>

@@ -1,19 +1,26 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Header } from "@/components/dashboard/Header";
 import { StatCard } from "@/components/ui/stat-card";
 import { MiniMap } from "@/components/dashboard/MiniMap";
 import { SLAAlertStrip } from "@/components/dashboard/SLAAlertStrip";
 import { CaseRow } from "@/components/dashboard/CaseRow";
 import { CaseDetailPanel } from "@/components/dashboard/CaseDetailPanel";
+import { CaseFilters } from "@/components/dashboard/CaseFilters";
 import { mockCases } from "@/data/mock-cases";
-import { Case } from "@/types/case";
+import { Case, Severity } from "@/types/case";
 import { FileText, AlertTriangle, Clock, CheckCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSeverities, setSelectedSeverities] = useState<Severity[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const stats = {
     total: mockCases.length,
@@ -28,6 +35,31 @@ export default function Dashboard() {
     normal: mockCases.filter((c) => c.slaMinutesRemaining > 15).length,
   };
 
+  // Filter cases based on search and filters
+  const filteredCases = useMemo(() => {
+    return mockCases.filter((caseData) => {
+      // Search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        if (
+          !caseData.id.toLowerCase().includes(query) &&
+          !caseData.location.toLowerCase().includes(query)
+        ) {
+          return false;
+        }
+      }
+      // Severity filter
+      if (selectedSeverities.length > 0 && !selectedSeverities.includes(caseData.severity)) {
+        return false;
+      }
+      // Status filter
+      if (selectedStatuses.length > 0 && !selectedStatuses.includes(caseData.status)) {
+        return false;
+      }
+      return true;
+    });
+  }, [searchQuery, selectedSeverities, selectedStatuses]);
+
   const handleAcknowledge = (caseData: Case) => {
     toast({
       title: "Case Acknowledged",
@@ -35,13 +67,33 @@ export default function Dashboard() {
     });
   };
 
-  const recentCases = mockCases.slice(0, 3);
+  const handleViewFullMap = () => {
+    navigate("/fullscreen-map");
+  };
+
+  const recentCases = filteredCases.slice(0, 5);
 
   return (
     <div className="flex flex-1 overflow-hidden">
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Dashboard" />
-        
+        <Header
+          title="Dashboard"
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          onFilterClick={() => setShowFilters(!showFilters)}
+        />
+
+        {showFilters && (
+          <div className="px-6 py-3 border-b border-border bg-card">
+            <CaseFilters
+              selectedSeverities={selectedSeverities}
+              onSeverityChange={setSelectedSeverities}
+              selectedStatuses={selectedStatuses}
+              onStatusChange={setSelectedStatuses}
+            />
+          </div>
+        )}
+
         <ScrollArea className="flex-1">
           <div className="p-6 space-y-6">
             {/* Stats Row */}
@@ -82,8 +134,9 @@ export default function Dashboard() {
             {/* Map and SLA Strip */}
             <div className="grid grid-cols-1 gap-4">
               <MiniMap
-                cases={mockCases}
+                cases={filteredCases}
                 onCaseClick={setSelectedCase}
+                onViewFullMap={handleViewFullMap}
               />
               <SLAAlertStrip
                 overdue={slaStats.overdue}
@@ -95,7 +148,11 @@ export default function Dashboard() {
             {/* Recent Cases Preview */}
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold">Recent Cases</h2>
+                <h2 className="text-lg font-semibold">
+                  {searchQuery || selectedSeverities.length > 0 || selectedStatuses.length > 0
+                    ? `Filtered Cases (${filteredCases.length})`
+                    : "Recent Cases"}
+                </h2>
                 <a
                   href="/cases"
                   className="text-sm text-primary hover:underline"
@@ -104,15 +161,21 @@ export default function Dashboard() {
                 </a>
               </div>
               <div className="space-y-3">
-                {recentCases.map((caseData) => (
-                  <CaseRow
-                    key={caseData.id}
-                    caseData={caseData}
-                    isSelected={selectedCase?.id === caseData.id}
-                    onSelect={setSelectedCase}
-                    onAcknowledge={handleAcknowledge}
-                  />
-                ))}
+                {recentCases.length > 0 ? (
+                  recentCases.map((caseData) => (
+                    <CaseRow
+                      key={caseData.id}
+                      caseData={caseData}
+                      isSelected={selectedCase?.id === caseData.id}
+                      onSelect={setSelectedCase}
+                      onAcknowledge={handleAcknowledge}
+                    />
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No cases found matching your search</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

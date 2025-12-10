@@ -10,6 +10,8 @@ import MapView from "./pages/MapView";
 import SLAAlerts from "./pages/SLAAlerts";
 import ActivityLog from "./pages/ActivityLog";
 import Settings from "./pages/Settings";
+import Profile from "./pages/Profile";
+import FullscreenMap from "./pages/FullscreenMap";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,6 +64,15 @@ const App = () => (
               </DashboardLayout>
             }
           />
+          <Route
+            path="/profile"
+            element={
+              <DashboardLayout>
+                <Profile />
+              </DashboardLayout>
+            }
+          />
+          <Route path="/fullscreen-map" element={<FullscreenMap />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
