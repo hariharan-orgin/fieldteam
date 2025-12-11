@@ -4,10 +4,12 @@ import { mockCases } from "@/data/mock-cases";
 import { Case, Severity } from "@/types/case";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { MapPin, X, Navigation, ChevronRight, ArrowLeft, Crosshair } from "lucide-react";
+import { MapPin, X, Navigation, ChevronRight, ArrowLeft, Crosshair, Route } from "lucide-react";
 import { SeverityBadge } from "@/components/ui/severity-badge";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { GoogleMapComponent } from "@/components/maps/GoogleMapComponent";
+import indiaMapBg from "@/assets/india-map-bg.jpg";
 
 export default function FullscreenMap() {
   const navigate = useNavigate();
@@ -15,6 +17,7 @@ export default function FullscreenMap() {
   const [filters, setFilters] = useState<Severity[]>(["critical", "high", "medium", "low"]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [showDirections, setShowDirections] = useState(false);
 
   const getUserLocation = () => {
     setIsLocating(true);
@@ -29,10 +32,15 @@ export default function FullscreenMap() {
         },
         (error) => {
           console.error("Error getting location:", error);
+          // Default to Delhi, India
+          setUserLocation({ lat: 28.6139, lng: 77.2090 });
           setIsLocating(false);
         },
         { enableHighAccuracy: true }
       );
+    } else {
+      setUserLocation({ lat: 28.6139, lng: 77.2090 });
+      setIsLocating(false);
     }
   };
 
@@ -57,6 +65,14 @@ export default function FullscreenMap() {
     low: "text-low",
   };
 
+  const handleNavigate = () => {
+    if (selectedCase && userLocation) {
+      setShowDirections(true);
+    }
+  };
+
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
       {/* Header */}
@@ -65,7 +81,7 @@ export default function FullscreenMap() {
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-lg font-semibold">Live Map</h1>
+          <h1 className="text-lg font-semibold">Live Map - India</h1>
         </div>
         <div className="flex items-center gap-2">
           {userLocation && (
@@ -110,63 +126,70 @@ export default function FullscreenMap() {
           ))}
         </div>
 
-        {/* Full Map Placeholder */}
-        <div className="absolute inset-0 bg-gradient-to-br from-secondary to-muted">
-          {/* Grid overlay */}
-          <div
-            className="absolute inset-0 opacity-20"
-            style={{
-              backgroundImage: `
-                linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px),
-                linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px)
-              `,
-              backgroundSize: "60px 60px",
-            }}
+        {/* Google Maps or Fallback with India background */}
+        {apiKey ? (
+          <GoogleMapComponent
+            cases={filteredCases}
+            userLocation={userLocation}
+            selectedCase={selectedCase}
+            onCaseClick={setSelectedCase}
+            showDirections={showDirections}
+            height="100%"
+            className="absolute inset-0"
           />
+        ) : (
+          <div className="absolute inset-0">
+            <img 
+              src={indiaMapBg} 
+              alt="India Map"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent" />
+            
+            {/* Map pins */}
+            {filteredCases.map((caseData, index) => {
+              const positions = [
+                { top: "20%", left: "25%" },
+                { top: "35%", left: "55%" },
+                { top: "55%", left: "20%" },
+                { top: "30%", left: "70%" },
+                { top: "65%", left: "50%" },
+              ];
+              const pos = positions[index % positions.length];
 
-          {/* Map pins */}
-          {filteredCases.map((caseData, index) => {
-            const positions = [
-              { top: "20%", left: "25%" },
-              { top: "35%", left: "55%" },
-              { top: "55%", left: "20%" },
-              { top: "30%", left: "70%" },
-              { top: "65%", left: "50%" },
-            ];
-            const pos = positions[index % positions.length];
+              return (
+                <button
+                  key={caseData.id}
+                  className={cn(
+                    "absolute transform -translate-x-1/2 -translate-y-full cursor-pointer transition-all hover:scale-125 z-10",
+                    selectedCase?.id === caseData.id && "scale-125"
+                  )}
+                  style={{ top: pos.top, left: pos.left }}
+                  onClick={() => setSelectedCase(caseData)}
+                >
+                  <MapPin
+                    className={cn("w-10 h-10 drop-shadow-lg", severityColors[caseData.severity])}
+                    fill="currentColor"
+                  />
+                </button>
+              );
+            })}
 
-            return (
-              <button
-                key={caseData.id}
-                className={cn(
-                  "absolute transform -translate-x-1/2 -translate-y-full cursor-pointer transition-all hover:scale-125 z-10",
-                  selectedCase?.id === caseData.id && "scale-125"
-                )}
-                style={{ top: pos.top, left: pos.left }}
-                onClick={() => setSelectedCase(caseData)}
-              >
-                <MapPin
-                  className={cn("w-10 h-10 drop-shadow-lg", severityColors[caseData.severity])}
-                  fill="currentColor"
-                />
-              </button>
-            );
-          })}
-
-          {/* User location */}
-          <div
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10"
-            style={{ top: "45%", left: "40%" }}
-          >
-            <div className="relative">
-              <div className="w-6 h-6 rounded-full bg-primary border-3 border-card shadow-lg" />
-              <div className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
-              <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs font-medium bg-card px-2 py-0.5 rounded shadow-sm whitespace-nowrap">
-                You
-              </span>
+            {/* User location */}
+            <div
+              className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10"
+              style={{ top: "45%", left: "40%" }}
+            >
+              <div className="relative">
+                <div className="w-6 h-6 rounded-full bg-primary border-3 border-card shadow-lg" />
+                <div className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
+                <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs font-medium bg-card px-2 py-0.5 rounded shadow-sm whitespace-nowrap">
+                  You
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Quick Card on Pin Click */}
         {selectedCase && (
@@ -180,7 +203,10 @@ export default function FullscreenMap() {
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
-                onClick={() => setSelectedCase(null)}
+                onClick={() => {
+                  setSelectedCase(null);
+                  setShowDirections(false);
+                }}
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -190,9 +216,13 @@ export default function FullscreenMap() {
               <span>{selectedCase.location}</span>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" className="flex-1 rounded-button">
-                <Navigation className="w-4 h-4 mr-1.5" />
-                Navigate
+              <Button 
+                size="sm" 
+                className="flex-1 rounded-button"
+                onClick={handleNavigate}
+              >
+                <Route className="w-4 h-4 mr-1.5" />
+                {showDirections ? "Showing Route" : "Get Directions"}
               </Button>
               <Button
                 size="sm"
