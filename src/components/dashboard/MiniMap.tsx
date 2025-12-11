@@ -2,7 +2,6 @@ import { MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Case } from "@/types/case";
 import { cn } from "@/lib/utils";
-import indiaMapBg from "@/assets/india-map-bg.jpg";
 
 interface MiniMapProps {
   cases: Case[];
@@ -22,20 +21,25 @@ export function MiniMap({ cases, onCaseClick, onViewFullMap, className }: MiniMa
   return (
     <div className={cn("bg-card rounded-lg border shadow-card overflow-hidden", className)}>
       <div className="flex items-center justify-between p-3 border-b border-border">
-        <h3 className="text-sm font-medium">Active Incidents - India</h3>
+        <h3 className="text-sm font-medium">Active Incidents Map</h3>
         <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onViewFullMap}>
           View Full Map
         </Button>
       </div>
       
-      {/* Map with India background */}
-      <div className="relative h-[220px]">
-        <img 
-          src={indiaMapBg} 
-          alt="India Map Dashboard"
-          className="absolute inset-0 w-full h-full object-cover opacity-90"
+      {/* Map Placeholder */}
+      <div className="relative h-[220px] bg-gradient-to-br from-secondary to-muted">
+        {/* Grid overlay for map effect */}
+        <div 
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `
+              linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px),
+              linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px)
+            `,
+            backgroundSize: '40px 40px'
+          }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-card/60 to-transparent" />
         
         {/* Simulated map pins */}
         {cases.slice(0, 5).map((caseData, index) => {
@@ -95,7 +99,7 @@ export function MiniMap({ cases, onCaseClick, onViewFullMap, className }: MiniMa
         </div>
 
         {/* Map Legend */}
-        <div className="absolute bottom-2 right-2 bg-card/95 backdrop-blur-sm rounded-md p-2 shadow-sm">
+        <div className="absolute bottom-2 right-2 bg-card/90 backdrop-blur-sm rounded-md p-2 shadow-sm">
           <div className="flex flex-col gap-1 text-[10px]">
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-critical" />

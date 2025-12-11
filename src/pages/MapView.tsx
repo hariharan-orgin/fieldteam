@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { MapPin, X, Navigation, ChevronRight } from "lucide-react";
 import { SeverityBadge } from "@/components/ui/severity-badge";
 import { cn } from "@/lib/utils";
-import indiaMapBg from "@/assets/india-map-bg.jpg";
 
 export default function MapView() {
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
@@ -58,14 +57,19 @@ export default function MapView() {
           ))}
         </div>
 
-        {/* Full Map with India Background */}
-        <div className="absolute inset-0">
-          <img 
-            src={indiaMapBg} 
-            alt="India Map"
-            className="absolute inset-0 w-full h-full object-cover"
+        {/* Full Map Placeholder */}
+        <div className="absolute inset-0 bg-gradient-to-br from-secondary to-muted">
+          {/* Grid overlay */}
+          <div
+            className="absolute inset-0 opacity-20"
+            style={{
+              backgroundImage: `
+                linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px),
+                linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px)
+              `,
+              backgroundSize: "60px 60px",
+            }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/30 to-transparent" />
 
           {/* Map pins */}
           {filteredCases.map((caseData, index) => {
