@@ -4,9 +4,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { SeverityBadge } from "@/components/ui/severity-badge";
 import { mockCases } from "@/data/mock-cases";
-import { User, Phone, Mail, MapPin, Calendar, FileText, ArrowLeft } from "lucide-react";
+import { Phone, Mail, MapPin, Calendar, FileText, ArrowLeft, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import fieldWorkerImage from "@/assets/field-worker.jpg";
+import indiaMapBg from "@/assets/india-map-bg.jpg";
 
 interface UserProfile {
   name: string;
@@ -66,33 +68,48 @@ export default function Profile() {
           </Button>
 
           {/* Profile Card */}
-          <div className="bg-card rounded-lg border shadow-card p-6">
-            <div className="flex items-start gap-6">
-              <Avatar className="h-24 w-24">
-                <AvatarFallback className="bg-primary text-primary-foreground text-3xl">
-                  {profile.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <h2 className="text-2xl font-semibold mb-1">{profile.name}</h2>
-                <p className="text-muted-foreground mb-4">{profile.role}</p>
+          <div className="bg-card rounded-lg border shadow-card overflow-hidden">
+            <div className="h-24 bg-gradient-to-r from-primary to-primary/60 relative">
+              <div className="absolute inset-0 opacity-30">
+                <img src={indiaMapBg} alt="" className="w-full h-full object-cover" />
+              </div>
+              <div className="absolute top-2 right-3 flex items-center gap-1.5 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
+                <Shield className="w-3.5 h-3.5 text-white" />
+                <span className="text-xs text-white font-medium">SafeText India</span>
+              </div>
+            </div>
+            <div className="p-6 -mt-12 relative">
+              <div className="flex items-end gap-6">
+                <div className="relative">
+                  <div className="w-24 h-24 rounded-xl overflow-hidden border-4 border-card shadow-lg">
+                    <img 
+                      src={fieldWorkerImage} 
+                      alt={profile.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-low rounded-full border-2 border-card flex items-center justify-center">
+                    <span className="text-[10px]">✓</span>
+                  </div>
+                </div>
+                <div className="flex-1 pb-2">
+                  <h2 className="text-2xl font-semibold mb-1">{profile.name}</h2>
+                  <p className="text-muted-foreground">{profile.role}</p>
+                </div>
+              </div>
 
-                <div className="grid gap-3">
-                  <div className="flex items-center gap-3 text-sm">
-                    <Phone className="w-4 h-4 text-muted-foreground" />
-                    <span>{profile.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <Mail className="w-4 h-4 text-muted-foreground" />
-                    <span>{profile.email}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span>Member since {profile.joinDate}</span>
-                  </div>
+              <div className="grid gap-3 mt-6">
+                <div className="flex items-center gap-3 text-sm p-3 bg-secondary/50 rounded-lg">
+                  <Phone className="w-4 h-4 text-primary" />
+                  <span>{profile.phone}</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm p-3 bg-secondary/50 rounded-lg">
+                  <Mail className="w-4 h-4 text-primary" />
+                  <span>{profile.email}</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm p-3 bg-secondary/50 rounded-lg">
+                  <Calendar className="w-4 h-4 text-primary" />
+                  <span>Member since {profile.joinDate}</span>
                 </div>
               </div>
             </div>
@@ -106,28 +123,28 @@ export default function Profile() {
             </div>
             {userLocation ? (
               <div className="space-y-3">
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Latitude: </span>
-                  <span className="font-mono">{userLocation.lat.toFixed(6)}</span>
+                <div className="flex gap-4">
+                  <div className="flex-1 p-3 bg-secondary/50 rounded-lg">
+                    <span className="text-xs text-muted-foreground block mb-1">Latitude</span>
+                    <span className="font-mono text-sm">{userLocation.lat.toFixed(6)}</span>
+                  </div>
+                  <div className="flex-1 p-3 bg-secondary/50 rounded-lg">
+                    <span className="text-xs text-muted-foreground block mb-1">Longitude</span>
+                    <span className="font-mono text-sm">{userLocation.lng.toFixed(6)}</span>
+                  </div>
                 </div>
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Longitude: </span>
-                  <span className="font-mono">{userLocation.lng.toFixed(6)}</span>
-                </div>
-                <div className="h-40 bg-gradient-to-br from-secondary to-muted rounded-lg flex items-center justify-center relative overflow-hidden">
-                  <div
-                    className="absolute inset-0 opacity-20"
-                    style={{
-                      backgroundImage: `
-                        linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px),
-                        linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px)
-                      `,
-                      backgroundSize: "30px 30px",
-                    }}
+                <div className="h-40 rounded-lg overflow-hidden relative">
+                  <img 
+                    src={indiaMapBg} 
+                    alt="Location Map"
+                    className="w-full h-full object-cover"
                   />
-                  <div className="relative">
-                    <div className="w-5 h-5 rounded-full bg-primary border-2 border-card shadow-lg" />
-                    <div className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-card/60 to-transparent" />
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <div className="relative">
+                      <div className="w-5 h-5 rounded-full bg-primary border-2 border-card shadow-lg" />
+                      <div className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
+                    </div>
                   </div>
                 </div>
               </div>
