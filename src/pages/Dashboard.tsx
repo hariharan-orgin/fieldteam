@@ -8,10 +8,12 @@ import { CaseDetailPanel } from "@/components/dashboard/CaseDetailPanel";
 import { CaseFilters } from "@/components/dashboard/CaseFilters";
 import { mockCases } from "@/data/mock-cases";
 import { Case, Severity } from "@/types/case";
-import { FileText, AlertTriangle, Clock, CheckCircle } from "lucide-react";
+import { FileText, AlertTriangle, Clock, CheckCircle, Bell } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { useAvailability } from "@/contexts/AvailabilityContext";
 
 export default function Dashboard() {
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
@@ -21,6 +23,20 @@ export default function Dashboard() {
   const [showFilters, setShowFilters] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { isAvailable } = useAvailability();
+
+  // Test function to trigger new assignment alert (for development)
+  const triggerTestAlert = () => {
+    if (typeof window !== "undefined" && (window as any).__triggerNewAssignment) {
+      (window as any).__triggerNewAssignment();
+      toast({
+        title: "Test Alert Triggered",
+        description: isAvailable 
+          ? "You are online - no popup will show"
+          : "Check for popup, sound, and browser notification",
+      });
+    }
+  };
 
   const stats = {
     total: mockCases.length,
@@ -153,12 +169,24 @@ export default function Dashboard() {
                     ? `Filtered Cases (${filteredCases.length})`
                     : "Recent Cases"}
                 </h2>
-                <a
-                  href="/cases"
-                  className="text-sm text-primary hover:underline"
-                >
-                  View all cases →
-                </a>
+                <div className="flex items-center gap-2">
+                  {/* Dev test button - remove in production */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={triggerTestAlert}
+                    className="text-xs"
+                  >
+                    <Bell className="w-3 h-3 mr-1" />
+                    Test Alert
+                  </Button>
+                  <a
+                    href="/cases"
+                    className="text-sm text-primary hover:underline"
+                  >
+                    View all cases →
+                  </a>
+                </div>
               </div>
               <div className="space-y-3">
                 {recentCases.length > 0 ? (
