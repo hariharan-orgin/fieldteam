@@ -14,12 +14,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { useState, useEffect } from "react";
+import { useAvailability } from "@/contexts/AvailabilityContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface SidebarProps {
   collapsed?: boolean;
   onCollapse?: (collapsed: boolean) => void;
   assignedCasesCount?: number;
+  highlightCases?: boolean;
 }
 
 const menuItems = [
@@ -35,25 +37,26 @@ export function Sidebar({
   collapsed = false,
   onCollapse,
   assignedCasesCount = 5,
+  highlightCases = false,
 }: SidebarProps) {
-  const [isAvailable, setIsAvailable] = useState(() => {
-    const saved = localStorage.getItem("userSettings");
-    if (saved) {
-      const settings = JSON.parse(saved);
-      return settings.availability ?? true;
-    }
-    return true;
-  });
+  const { isAvailable, setIsAvailable } = useAvailability();
+  const { toast } = useToast();
 
-  // Sync availability with localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem("userSettings");
-    if (saved) {
-      const settings = JSON.parse(saved);
-      settings.availability = isAvailable;
-      localStorage.setItem("userSettings", JSON.stringify(settings));
+  const handleAvailabilityChange = (checked: boolean) => {
+    setIsAvailable(checked);
+    if (!checked) {
+      toast({
+        title: "You are offline",
+        description: "You will not receive new assignments.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "You are online",
+        description: "You will now receive new assignments.",
+      });
     }
-  }, [isAvailable]);
+  };
 
   return (
     <aside
@@ -79,32 +82,39 @@ export function Sidebar({
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-              "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-            )}
-            activeClassName="bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary"
-          >
-            <item.icon className="w-5 h-5 flex-shrink-0" />
-            {!collapsed && (
-              <>
-                <span className="flex-1">{item.label}</span>
-                {item.badge && assignedCasesCount > 0 && (
-                  <Badge
-                    variant="destructive"
-                    className="h-5 min-w-5 px-1.5 text-[10px]"
-                  >
-                    {assignedCasesCount}
-                  </Badge>
-                )}
-              </>
-            )}
-          </NavLink>
-        ))}
+        {menuItems.map((item) => {
+          const isHighlighted = highlightCases && item.path === "/cases";
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                isHighlighted && "ring-2 ring-destructive animate-pulse"
+              )}
+              activeClassName="bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary"
+            >
+              <item.icon className={cn("w-5 h-5 flex-shrink-0", isHighlighted && "text-destructive")} />
+              {!collapsed && (
+                <>
+                  <span className={cn("flex-1", isHighlighted && "text-destructive font-semibold")}>{item.label}</span>
+                  {item.badge && assignedCasesCount > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className={cn(
+                        "h-5 min-w-5 px-1.5 text-[10px]",
+                        isHighlighted && "animate-bounce"
+                      )}
+                    >
+                      {assignedCasesCount}
+                    </Badge>
+                  )}
+                </>
+              )}
+            </NavLink>
+          );
+        })}
       </nav>
 
       {/* Availability Toggle */}
@@ -122,7 +132,7 @@ export function Sidebar({
             </div>
             <Switch
               checked={isAvailable}
-              onCheckedChange={setIsAvailable}
+              onCheckedChange={handleAvailabilityChange}
               aria-label="Toggle availability"
             />
           </div>
